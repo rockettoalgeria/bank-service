@@ -22,29 +22,32 @@ public class TransactionController {
     @Autowired
     TransactionService transactionService;
 
+    @Autowired
+    TransactionRepository transactionRepository;
+
     @GetMapping
     public List<Transaction> getTransactionsList() {
-        return transactionService.getAllTransactions();
+        return transactionRepository.findAll();
     }
 
     //TODO transactional? how to test?
 
     @PostMapping("/withdraw")
     public Transaction withdrawTransaction(@Validated @RequestBody Transaction transaction) throws ResourceNotFoundException {
-        return transactionService.performWithdraw(transaction);
+        transactionService.performWriteOff(transaction, transaction.getFromAccountId()); // check account id here
+        return transactionRepository.save(transaction);
     }
 
-    /*@PostMapping("/deposit")
-    public Transaction depositTransaction(@Validated @RequestBody Transaction transaction) {
-
+    @PostMapping("/deposit")
+    public Transaction depositTransaction(@Validated @RequestBody Transaction transaction) throws ResourceNotFoundException {
+        transactionService.performReplenishment(transaction, transaction.getFromAccountId()); // check account id here
         return transactionRepository.save(transaction);
     }
 
     @PostMapping("/transfer")
-    public Transaction transferBetweenAccounts(@Validated @RequestBody Transaction transaction) {
-        if (transaction.amount.equals(BigDecimal.ZERO)){ // how to  <= ??
-            throw new WebApplicationException("Invalid withdraw amount", Response.Status.BAD_REQUEST);
-        }
+    public Transaction transferBetweenAccounts(@Validated @RequestBody Transaction transaction) throws ResourceNotFoundException { // how to rollback correct?
+        transactionService.performWriteOff(transaction, transaction.getFromAccountId()); // check account id here
+        transactionService.performReplenishment(transaction, transaction.getToAccountId()); // check account id here
         return transactionRepository.save(transaction);
-    }*/
+    }
 }

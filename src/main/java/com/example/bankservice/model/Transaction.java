@@ -5,7 +5,7 @@ import java.math.BigDecimal;
 
 @Entity
 @Table(name = "transactions")
-public class Transaction {
+public class Transaction { //add transaction type? use enums
 
     private long id;
     private long fromAccountId;

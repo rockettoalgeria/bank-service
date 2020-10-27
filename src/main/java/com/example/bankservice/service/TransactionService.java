@@ -24,22 +24,33 @@ public class TransactionService {
     @Autowired
     private AccountRepository accountRepository;
 
-    public List<Transaction> getAllTransactions() {
-        return transactionRepository.findAll();
-    }
-    public Transaction performWithdraw(Transaction transaction) throws ResourceNotFoundException {
-        BigDecimal amount = transaction.getAmount();
-        long accountId = transaction.getFromAccountId();
+    public void performWriteOff(Transaction transaction, long accountId) throws ResourceNotFoundException { //rename, othr exceptions
+        BigDecimal amount = transaction.getAmount();        //TODO Also check optional attributes (to/from)
 
         if (amount.compareTo(BigDecimal.ZERO) < 0) {
             throw new WebApplicationException("Invalid withdraw amount", Response.Status.BAD_REQUEST);
         }
-        Account account = accountRepository.findById(transaction.getFromAccountId())
+        Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("Contact not found for this id :: " + accountId));
         BigDecimal potentialBalance = account.getBalance().subtract(amount);
         if (potentialBalance.compareTo(BigDecimal.ZERO) >= 0) {
+            System.out.print(potentialBalance);
             account.setBalance(potentialBalance);
         }
-        return transactionRepository.save(transaction);
+    }
+
+    public void performReplenishment(Transaction transaction, long accountId) throws ResourceNotFoundException {
+        BigDecimal amount = transaction.getAmount();
+
+        if (amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new WebApplicationException("Invalid withdraw amount", Response.Status.BAD_REQUEST); // dup code here
+        }
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> new ResourceNotFoundException("Contact not found for this id :: " + accountId));
+        BigDecimal newBalance = account.getBalance().add(amount);
+        System.out.println(" -> " + newBalance);
+        System.out.println(amount + " | " + account.getBalance());
+        account.setBalance(newBalance);
     }
 }
