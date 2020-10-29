@@ -1,5 +1,6 @@
 package com.example.bankservice.service;
 
+import com.example.bankservice.exception.InvalidTransactionAmountException;
 import com.example.bankservice.exception.ResourceNotFoundException;
 import com.example.bankservice.model.Account;
 import com.example.bankservice.model.Transaction;
@@ -7,13 +8,10 @@ import com.example.bankservice.repository.AccountRepository;
 import com.example.bankservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Response;
 import java.math.BigDecimal;
-import java.util.List;
+import java.math.RoundingMode;
+import java.util.UUID;
 
 @Service
 public class TransactionService {
@@ -24,31 +22,39 @@ public class TransactionService {
     @Autowired
     private AccountRepository accountRepository;
 
-    public void performWriteOff(Transaction transaction, long accountId) throws ResourceNotFoundException {
+    public void performWriteOff(Transaction transaction, UUID accountId)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
         BigDecimal amount = transaction.getAmount();
 
-        if (amount.compareTo(BigDecimal.ZERO) < 0) {
-            throw new WebApplicationException("Invalid withdraw amount", Response.Status.BAD_REQUEST);
+        if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
+            throw new InvalidTransactionAmountException();
         }
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ResourceNotFoundException("Contact not found for this id :: " + accountId));
-        BigDecimal potentialBalance = account.getBalance().subtract(amount);
+        Account account = accountRepository.findOneById(accountId);
+        if (account == null) {
+            throw new ResourceNotFoundException();
+        }
+
+        BigDecimal potentialBalance = account.getBalance().subtract(amount).setScale(2, RoundingMode.HALF_EVEN);
         if (potentialBalance.compareTo(BigDecimal.ZERO) >= 0) {
             account.setBalance(potentialBalance);
+        } else {
+            throw new InvalidTransactionAmountException();
         }
     }
 
-    public void performReplenishment(Transaction transaction, long accountId) throws ResourceNotFoundException {
+    public void performReplenishment(Transaction transaction, UUID accountId)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
         BigDecimal amount = transaction.getAmount();
 
-        if (amount.compareTo(BigDecimal.ZERO) < 0) {
-            throw new WebApplicationException("Invalid withdraw amount", Response.Status.BAD_REQUEST);
+        if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
+            throw new InvalidTransactionAmountException();
+        }
+        Account account = accountRepository.findOneById(accountId);
+        if (account == null) {
+            throw new ResourceNotFoundException();
         }
 
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> new ResourceNotFoundException("Contact not found for this id :: " + accountId));
-
-        BigDecimal newBalance = account.getBalance().add(amount);
+        BigDecimal newBalance = account.getBalance().add(amount).setScale(2, RoundingMode.HALF_EVEN);
         account.setBalance(newBalance);
     }
 }

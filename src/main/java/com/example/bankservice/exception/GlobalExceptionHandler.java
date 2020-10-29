@@ -17,6 +17,24 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
 	}
 
+	@ExceptionHandler(InvalidTransactionAmountException.class)
+	public ResponseEntity<?> InvalidTransactionAmountException(InvalidTransactionAmountException ex, WebRequest request) {
+		ErrorDetails errorDetails = new ErrorDetails(new Date(), ex.getMessage(), request.getDescription(false));
+		return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+	}
+
+	@ExceptionHandler(InvalidTransactionRequestException.class)
+	public ResponseEntity<?> InvalidTransactionRequestException(InvalidTransactionRequestException ex, WebRequest request) {
+		ErrorDetails errorDetails = new ErrorDetails(new Date(), ex.getMessage(), request.getDescription(false));
+		return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+	}
+
+	@ExceptionHandler(InvalidCredentialsException.class)
+	public ResponseEntity<?> InvalidCredentialsException(InvalidCredentialsException ex, WebRequest request) {
+		ErrorDetails errorDetails = new ErrorDetails(new Date(), ex.getMessage(), request.getDescription(false));
+		return new ResponseEntity<>(errorDetails, HttpStatus.OK);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<?> globleExcpetionHandler(Exception ex, WebRequest request) {
 		ErrorDetails errorDetails = new ErrorDetails(new Date(), ex.getMessage(), request.getDescription(false));

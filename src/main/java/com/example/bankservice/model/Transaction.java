@@ -2,18 +2,20 @@ package com.example.bankservice.model;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Entity
 @Table(name = "transactions")
 public class Transaction {
 
-    private long id;
-    private long fromAccountId;
-    private long toAccountId;
-    private BigDecimal amount;
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private long id;
+
+    private UUID fromAccountId;
+    private UUID toAccountId = null;
+    private BigDecimal amount;
+
     public long getId() {
         return id;
     }
@@ -21,21 +23,19 @@ public class Transaction {
         this.id = id;
     }
 
-    @Column(name = "fromAccountId", nullable = false)
-    public long getFromAccountId() {
+    @Column(name = "from_account_id", nullable = false)
+    public UUID getFromAccountId() {
         return fromAccountId;
     }
-    public void setFromAccountId(long from) {
+    public void setFromAccountId(UUID from) {
         this.fromAccountId = from;
     }
 
-    @Column(name = "toAccountId", nullable = true)
-    public long getToAccountId() {
+    @Column(name = "to_account_id", nullable = true)
+    public UUID getToAccountId() {
         return toAccountId;
     }
-    public void setToAccountId(long to) {
-        this.toAccountId = to;
-    }
+    public void setToAccountId(UUID to) { this.toAccountId = to; }
 
     @Column(name = "amount", nullable = false)
     public BigDecimal getAmount() {
