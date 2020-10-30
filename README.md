@@ -8,7 +8,7 @@
 
 ### Что сделано:
 ```
-POST /auth - получение JWT, ожидает username и password (значения см. в JWTService)
+POST /auth - получение JWT, ожидает username и password (admin/password)
 *POST /account - создание счета с нулевым балансом и uuid
 *POST /transaction/withdraw - зачисление денег на счет
 *POST /transaction/deposit - снятие денег со счета
