@@ -7,8 +7,15 @@ import com.example.bankservice.model.Account;
 import com.example.bankservice.model.Transaction;
 import com.example.bankservice.repository.AccountRepository;
 import com.example.bankservice.repository.TransactionRepository;
+import org.hibernate.PessimisticLockException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.EnableRetry;
+import org.springframework.retry.annotation.Retryable;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -16,11 +23,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.persistence.RollbackException;
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class TransactionService {
 
     @Autowired
@@ -65,7 +74,6 @@ public class TransactionService {
         account.setBalance(newBalance);
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE, rollbackFor= RollbackException.class)
     public void doWithdrawTransaction(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
         if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
@@ -75,7 +83,6 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE, rollbackFor=Exception.class)
     public void doDepositTransaction(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
         if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
@@ -85,7 +92,6 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE, rollbackFor=Exception.class)
     public void doTransferBetweenAccounts(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
         if (transaction.getToAccountId() == null || transaction.getFromAccountId() == null) {
