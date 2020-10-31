@@ -1,7 +1,6 @@
 package com.example.bankservice.controller;
 
 import java.math.BigDecimal;
-
 import com.example.bankservice.model.Account;
 import com.example.bankservice.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -7,29 +7,21 @@ import com.example.bankservice.model.Account;
 import com.example.bankservice.model.Transaction;
 import com.example.bankservice.repository.AccountRepository;
 import com.example.bankservice.repository.TransactionRepository;
-import org.hibernate.PessimisticLockException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
-import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import javax.persistence.RollbackException;
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
-@Transactional
+@EnableRetry
+@Retryable
+@Transactional(isolation = Isolation.REPEATABLE_READ)
 public class TransactionService {
 
     @Autowired

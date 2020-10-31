@@ -21,7 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -199,26 +198,29 @@ class BankServiceTests {
     void multithreading() throws Exception {
         String token = getToken();
         UUID accountID_1 = createAccount(token);
+        UUID accountID_2 = createAccount(token);
 
         Transaction transaction = new Transaction();
         transaction.setFromAccountId(accountID_1);
-        transaction.setAmount(BigDecimal.valueOf(10000));
+        transaction.setAmount(BigDecimal.valueOf(1000));
         transactionService.doDepositTransaction(transaction);
-
         transaction.setAmount(BigDecimal.valueOf(10));
+
         Thread thread_1 = new Thread(() -> {
-            try {
-                transactionService.doDepositTransaction(transaction);
-            } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
-                e.printStackTrace();
+            for (int i = 0; i < 10; i++)
+                try {
+                    transactionService.doDepositTransaction(transaction);
+                } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
+                    e.printStackTrace();
             }
         });
 
         Thread thread_2 = new Thread(() -> {
-            try {
-                transactionService.doDepositTransaction(transaction);
-            } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
-                e.printStackTrace();
+            for (int i = 0; i < 5; i++)
+                try {
+                    transactionService.doDepositTransaction(transaction);
+                } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
+                    e.printStackTrace();
             }
         });
 
@@ -239,13 +241,12 @@ class BankServiceTests {
         thread_2.join();
         thread_3.join();
 
-        Assert.assertEquals(BigDecimal.valueOf(10020).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
+        Assert.assertEquals(BigDecimal.valueOf(1160).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
 
-        UUID accountID_2 = createAccount(token);
         Transaction transaction_transfer = new Transaction();
         transaction_transfer.setFromAccountId(accountID_1);
         transaction_transfer.setToAccountId(accountID_2);
-        transaction_transfer.setAmount(BigDecimal.valueOf(10));
+        transaction_transfer.setAmount(BigDecimal.valueOf(100));
 
         Thread thread_transfer = new Thread(() -> {
             try {
@@ -269,7 +270,7 @@ class BankServiceTests {
         thread_concurrent.join();
         thread_transfer.join();
 
-        Assert.assertEquals(BigDecimal.valueOf(10).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_2));
-        Assert.assertEquals(BigDecimal.valueOf(10030).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
+        Assert.assertEquals(BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_2));
+        Assert.assertEquals(BigDecimal.valueOf(1070).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
     }
 }

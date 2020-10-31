@@ -2,7 +2,6 @@ package com.example.bankservice.model;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.UUID;
 
 @Entity

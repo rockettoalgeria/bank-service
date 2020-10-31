@@ -1,4 +1,5 @@
 package com.example.bankservice.configuration;
+
 import com.example.bankservice.components.JWTFilter;
 import com.example.bankservice.components.JWTEntryPoint;
 import com.example.bankservice.service.JWTService;

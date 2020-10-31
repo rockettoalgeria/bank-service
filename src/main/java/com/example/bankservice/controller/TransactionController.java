@@ -4,19 +4,11 @@ import com.example.bankservice.exception.InvalidTransactionAmountException;
 import com.example.bankservice.exception.InvalidTransactionRequestException;
 import com.example.bankservice.exception.ResourceNotFoundException;
 import com.example.bankservice.model.Transaction;
-import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.http.HttpStatus;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
-import org.springframework.transaction.annotation.Transactional;
 import com.example.bankservice.repository.TransactionRepository;
 import com.example.bankservice.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-
-import javax.persistence.RollbackException;
 
 @RestController
 @RequestMapping("/transaction")
