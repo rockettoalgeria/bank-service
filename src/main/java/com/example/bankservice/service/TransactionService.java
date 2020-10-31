@@ -8,7 +8,6 @@ import com.example.bankservice.model.Transaction;
 import com.example.bankservice.repository.AccountRepository;
 import com.example.bankservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
@@ -66,8 +65,7 @@ public class TransactionService {
         account.setBalance(newBalance);
     }
 
-    @Retryable(value = CannotAcquireLockException.class,
-            backoff = @Backoff(delay = 100, maxDelay = 300))
+    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 250))
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void doWithdrawTransaction(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
@@ -78,8 +76,7 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
-    @Retryable(value = CannotAcquireLockException.class,
-            backoff = @Backoff(delay = 100, maxDelay = 300))
+    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 250))
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void doDepositTransaction(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
@@ -90,8 +87,7 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
-    @Retryable(value = CannotAcquireLockException.class,
-            backoff = @Backoff(delay = 100, maxDelay = 300))
+    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 250))
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void doTransferBetweenAccounts(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
