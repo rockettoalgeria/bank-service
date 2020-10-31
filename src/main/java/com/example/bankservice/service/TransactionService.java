@@ -22,9 +22,6 @@ import java.util.UUID;
 
 @Service
 @EnableRetry
-@Retryable(value = CannotAcquireLockException.class,
-        backoff = @Backoff(delay = 100, maxDelay = 300))
-@Transactional(isolation = Isolation.REPEATABLE_READ)
 public class TransactionService {
 
     @Autowired
@@ -33,7 +30,7 @@ public class TransactionService {
     @Autowired
     private AccountRepository accountRepository;
 
-    public void performWriteOff(Transaction transaction, UUID accountId)
+    private void performWriteOff(Transaction transaction, UUID accountId)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         BigDecimal amount = transaction.getAmount();
 
@@ -53,7 +50,7 @@ public class TransactionService {
         }
     }
 
-    public void performReplenishment(Transaction transaction, UUID accountId)
+    private void performReplenishment(Transaction transaction, UUID accountId)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         BigDecimal amount = transaction.getAmount();
 
@@ -69,6 +66,9 @@ public class TransactionService {
         account.setBalance(newBalance);
     }
 
+    @Retryable(value = CannotAcquireLockException.class,
+            backoff = @Backoff(delay = 100, maxDelay = 300))
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void doWithdrawTransaction(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
         if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
@@ -78,6 +78,9 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
+    @Retryable(value = CannotAcquireLockException.class,
+            backoff = @Backoff(delay = 100, maxDelay = 300))
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void doDepositTransaction(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
         if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
@@ -87,6 +90,9 @@ public class TransactionService {
         transactionRepository.save(transaction);
     }
 
+    @Retryable(value = CannotAcquireLockException.class,
+            backoff = @Backoff(delay = 100, maxDelay = 300))
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public void doTransferBetweenAccounts(Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
         if (transaction.getToAccountId() == null || transaction.getFromAccountId() == null) {
