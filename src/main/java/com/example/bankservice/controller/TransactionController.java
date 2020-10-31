@@ -28,37 +28,21 @@ public class TransactionController {
     @Autowired
     TransactionRepository transactionRepository;
 
-    @Transactional(isolation = Isolation.SERIALIZABLE, rollbackFor=RollbackException.class)
     @PostMapping("/withdraw")
     public void withdrawTransaction(@Validated @RequestBody Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
-            throw new InvalidTransactionRequestException();
-        }
-        transactionService.performWriteOff(transaction, transaction.getFromAccountId());
-        transactionRepository.save(transaction);
+        transactionService.doWithdrawTransaction(transaction);
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE, rollbackFor=Exception.class)
     @PostMapping("/deposit")
     public void depositTransaction(@Validated @RequestBody Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
-            throw new InvalidTransactionRequestException();
-        }
-        transactionService.performReplenishment(transaction, transaction.getFromAccountId());
-        transactionRepository.save(transaction);
+        transactionService.doDepositTransaction(transaction);
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE, rollbackFor=Exception.class)
     @PostMapping("/transfer")
     public void transferBetweenAccounts(@Validated @RequestBody Transaction transaction)
             throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        if (transaction.getToAccountId() == null || transaction.getFromAccountId() == null) {
-            throw new InvalidTransactionRequestException();
-        }
-        transactionService.performWriteOff(transaction, transaction.getFromAccountId());
-        transactionService.performReplenishment(transaction, transaction.getToAccountId());
-        transactionRepository.save(transaction);
+        transactionService.doTransferBetweenAccounts(transaction);
     }
 }

@@ -1,7 +1,9 @@
 package com.example.bankservice;
 
 import com.example.bankservice.model.Account;
+import com.example.bankservice.model.Transaction;
 import com.example.bankservice.repository.AccountRepository;
+import com.example.bankservice.service.TransactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.Assert;
 import org.junit.jupiter.api.Test;
@@ -36,6 +38,9 @@ class BankServiceTests {
 
     @Autowired
     private ApplicationContext applicationContext;
+
+    @Autowired
+    private TransactionService transactionService;
 
     @Autowired
     private AccountRepository accountRepository;
@@ -119,16 +124,24 @@ class BankServiceTests {
         String token = getToken();
 
         UUID accountID = createAccount(token);
-        performSimpleTransaction(BigDecimal.valueOf(0.01), accountID, token, "deposit", true);
+        Transaction transaction = new Transaction();
+
+        transaction.setFromAccountId(accountID);
+
+        transaction.setAmount(BigDecimal.valueOf(0.01));
+        transactionService.doDepositTransaction(transaction);
         Assert.assertEquals(BigDecimal.valueOf(0.01), getActualBalance(accountID));
 
-        performSimpleTransaction(BigDecimal.valueOf(0.0156), accountID, token, "deposit",true);
+        transaction.setAmount(BigDecimal.valueOf(0.0156));
+        transactionService.doDepositTransaction(transaction);
         Assert.assertEquals(BigDecimal.valueOf(0.03), getActualBalance(accountID));
 
-        performSimpleTransaction(BigDecimal.valueOf(0.125), accountID, token, "deposit", true);
+        transaction.setAmount(BigDecimal.valueOf(0.125));
+        transactionService.doDepositTransaction(transaction);
         Assert.assertEquals(BigDecimal.valueOf(0.16), getActualBalance(accountID));
 
-        performSimpleTransaction(BigDecimal.valueOf(Long.MAX_VALUE), accountID, token, "deposit", true);
+        transaction.setAmount(BigDecimal.valueOf(Long.MAX_VALUE));
+        transactionService.doDepositTransaction(transaction);
         Assert.assertEquals(BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.valueOf(0.16)), getActualBalance(accountID));
     }
 
@@ -159,9 +172,13 @@ class BankServiceTests {
         String token = getToken();
 
         UUID accountID = createAccount(token);
+        Transaction transaction = new Transaction();
 
+        transaction.setFromAccountId(accountID);
+
+        transaction.setAmount(BigDecimal.valueOf(0.9));
         for (int i = 0; i < 10000; i++) {
-            performSimpleTransaction(BigDecimal.valueOf(0.9), accountID, token, "deposit", true);
+            transactionService.doDepositTransaction(transaction);
         }
     }
 
