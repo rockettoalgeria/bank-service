@@ -8,6 +8,8 @@ import com.example.bankservice.model.Transaction;
 import com.example.bankservice.repository.AccountRepository;
 import com.example.bankservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
@@ -20,7 +22,8 @@ import java.util.UUID;
 
 @Service
 @EnableRetry
-@Retryable
+@Retryable(value = CannotAcquireLockException.class,
+        backoff = @Backoff(delay = 100, maxDelay = 300))
 @Transactional(isolation = Isolation.REPEATABLE_READ)
 public class TransactionService {
 
