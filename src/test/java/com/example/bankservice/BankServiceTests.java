@@ -1,10 +1,10 @@
 package com.example.bankservice;
 
 import com.example.bankservice.exception.InvalidTransactionAmountException;
-import com.example.bankservice.exception.InvalidTransactionRequestException;
 import com.example.bankservice.exception.ResourceNotFoundException;
 import com.example.bankservice.model.Account;
-import com.example.bankservice.model.Transaction;
+import com.example.bankservice.model.OneTargetTransaction;
+import com.example.bankservice.model.TransferTransaction;
 import com.example.bankservice.repository.AccountRepository;
 import com.example.bankservice.service.TransactionService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,7 +65,7 @@ class BankServiceTests {
 
     private String buildSimpleRequestWithValue(BigDecimal value, UUID uuid) {
         StringBuilder requestSB = new StringBuilder();
-        requestSB.append("{\"fromAccountId\":\"")
+        requestSB.append("{\"accountId\":\"")
                 .append(uuid.toString())
                 .append("\",\"amount\":")
                 .append(value).append("}");
@@ -127,24 +127,24 @@ class BankServiceTests {
         String token = getToken();
 
         UUID accountID = createAccount(token);
-        Transaction transaction = new Transaction();
+        OneTargetTransaction oneTargetTransaction = new OneTargetTransaction();
 
-        transaction.setFromAccountId(accountID);
+        oneTargetTransaction.setAccountId(accountID);
 
-        transaction.setAmount(BigDecimal.valueOf(0.01));
-        transactionService.doDepositTransaction(transaction);
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(0.01));
+        transactionService.doDepositTransaction(oneTargetTransaction);
         Assert.assertEquals(BigDecimal.valueOf(0.01), getActualBalance(accountID));
 
-        transaction.setAmount(BigDecimal.valueOf(0.0156));
-        transactionService.doDepositTransaction(transaction);
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(0.0156));
+        transactionService.doDepositTransaction(oneTargetTransaction);
         Assert.assertEquals(BigDecimal.valueOf(0.03), getActualBalance(accountID));
 
-        transaction.setAmount(BigDecimal.valueOf(0.125));
-        transactionService.doDepositTransaction(transaction);
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(0.125));
+        transactionService.doDepositTransaction(oneTargetTransaction);
         Assert.assertEquals(BigDecimal.valueOf(0.16), getActualBalance(accountID));
 
-        transaction.setAmount(BigDecimal.valueOf(Long.MAX_VALUE));
-        transactionService.doDepositTransaction(transaction);
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(Long.MAX_VALUE));
+        transactionService.doDepositTransaction(oneTargetTransaction);
         Assert.assertEquals(BigDecimal.valueOf(Long.MAX_VALUE).add(BigDecimal.valueOf(0.16)), getActualBalance(accountID));
     }
 
@@ -156,7 +156,7 @@ class BankServiceTests {
         UUID accountID_2 = createAccount(token);
 
         performSimpleTransaction(BigDecimal.valueOf(1000), accountID_1, token, "deposit", true);
-        performSimpleTransaction(BigDecimal.valueOf(555.55), accountID_2, token, "deposit", true);
+        performSimpleTransaction(BigDecimal.valueOf(555.55), accountID_2, token, "deposit",true);
         performTransferTransaction(BigDecimal.valueOf(155.54), accountID_2, accountID_1, token);
         Assert.assertEquals(BigDecimal.valueOf(1155.54), getActualBalance(accountID_1));
         Assert.assertEquals(BigDecimal.valueOf(400.01), getActualBalance(accountID_2));
@@ -175,13 +175,13 @@ class BankServiceTests {
         String token = getToken();
 
         UUID accountID = createAccount(token);
-        Transaction transaction = new Transaction();
+        OneTargetTransaction oneTargetTransaction = new OneTargetTransaction();
 
-        transaction.setFromAccountId(accountID);
+        oneTargetTransaction.setAccountId(accountID);
 
-        transaction.setAmount(BigDecimal.valueOf(0.9));
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(0.9));
         for (int i = 0; i < 10000; i++) {
-            transactionService.doDepositTransaction(transaction);
+            transactionService.doDepositTransaction(oneTargetTransaction);
         }
     }
 
@@ -200,17 +200,17 @@ class BankServiceTests {
         UUID accountID_1 = createAccount(token);
         UUID accountID_2 = createAccount(token);
 
-        Transaction transaction = new Transaction();
-        transaction.setFromAccountId(accountID_1);
-        transaction.setAmount(BigDecimal.valueOf(1000));
-        transactionService.doDepositTransaction(transaction);
-        transaction.setAmount(BigDecimal.valueOf(10));
+        OneTargetTransaction oneTargetTransaction = new OneTargetTransaction();
+        oneTargetTransaction.setAccountId(accountID_1);
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(1000));
+        transactionService.doDepositTransaction(oneTargetTransaction);
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(10));
 
         Thread thread_1 = new Thread(() -> {
             for (int i = 0; i < 10; i++)
                 try {
-                    transactionService.doDepositTransaction(transaction);
-                } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
+                    transactionService.doDepositTransaction(oneTargetTransaction);
+                } catch (InvalidTransactionAmountException | ResourceNotFoundException e) {
                     e.printStackTrace();
             }
         });
@@ -218,16 +218,16 @@ class BankServiceTests {
         Thread thread_2 = new Thread(() -> {
             for (int i = 0; i < 5; i++)
                 try {
-                    transactionService.doDepositTransaction(transaction);
-                } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
+                    transactionService.doDepositTransaction(oneTargetTransaction);
+                } catch (InvalidTransactionAmountException | ResourceNotFoundException e) {
                     e.printStackTrace();
             }
         });
 
         Thread thread_3 = new Thread(() -> {
             try {
-                transactionService.doDepositTransaction(transaction);
-            } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
+                transactionService.doDepositTransaction(oneTargetTransaction);
+            } catch (InvalidTransactionAmountException |  ResourceNotFoundException e) {
                 e.printStackTrace();
             }
         });
@@ -243,23 +243,23 @@ class BankServiceTests {
 
         Assert.assertEquals(BigDecimal.valueOf(1160).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
 
-        Transaction transaction_transfer = new Transaction();
-        transaction_transfer.setFromAccountId(accountID_1);
-        transaction_transfer.setToAccountId(accountID_2);
-        transaction_transfer.setAmount(BigDecimal.valueOf(100));
+        TransferTransaction transfer_transaction = new TransferTransaction();
+        transfer_transaction.setFromAccountId(accountID_1);
+        transfer_transaction.setToAccountId(accountID_2);
+        transfer_transaction.setAmount(BigDecimal.valueOf(100));
 
         Thread thread_transfer = new Thread(() -> {
             try {
-                transactionService.doTransferBetweenAccounts(transaction_transfer);
-            } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
+                transactionService.doTransferBetweenAccounts(transfer_transaction);
+            } catch (InvalidTransactionAmountException | ResourceNotFoundException e) {
                 e.printStackTrace();
             }
         });
 
         Thread thread_concurrent = new Thread(() -> {
             try {
-                transactionService.doDepositTransaction(transaction);
-            } catch (InvalidTransactionAmountException | InvalidTransactionRequestException | ResourceNotFoundException e) {
+                transactionService.doDepositTransaction(oneTargetTransaction);
+            } catch (InvalidTransactionAmountException | ResourceNotFoundException e) {
                 e.printStackTrace();
             }
         });

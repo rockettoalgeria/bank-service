@@ -1,16 +1,12 @@
 package com.example.bankservice.service;
 
 import com.example.bankservice.exception.InvalidTransactionAmountException;
-import com.example.bankservice.exception.InvalidTransactionRequestException;
 import com.example.bankservice.exception.ResourceNotFoundException;
 import com.example.bankservice.model.Account;
-import com.example.bankservice.model.Transaction;
+import com.example.bankservice.model.OneTargetTransaction;
+import com.example.bankservice.model.TransferTransaction;
 import com.example.bankservice.repository.AccountRepository;
-import com.example.bankservice.repository.TransactionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.EnableRetry;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,19 +16,13 @@ import java.math.RoundingMode;
 import java.util.UUID;
 
 @Service
-@EnableRetry
 public class TransactionService {
-
-    @Autowired
-    TransactionRepository transactionRepository;
 
     @Autowired
     private AccountRepository accountRepository;
 
-    private void performWriteOff(Transaction transaction, UUID accountId)
+    private void performWriteOff(BigDecimal amount, UUID accountId)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
-        BigDecimal amount = transaction.getAmount();
-
         if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
             throw new InvalidTransactionAmountException();
         }
@@ -41,7 +31,8 @@ public class TransactionService {
             throw new ResourceNotFoundException();
         }
 
-        BigDecimal potentialBalance = account.getBalance().subtract(amount).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal potentialBalance = account.getBalance()
+                                                .subtract(amount).setScale(2, RoundingMode.HALF_EVEN);
         if (potentialBalance.compareTo(BigDecimal.ZERO) >= 0) {
             account.setBalance(potentialBalance);
         } else {
@@ -49,10 +40,8 @@ public class TransactionService {
         }
     }
 
-    private void performReplenishment(Transaction transaction, UUID accountId)
+    private void performReplenishment(BigDecimal amount, UUID accountId)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
-        BigDecimal amount = transaction.getAmount();
-
         if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
             throw new InvalidTransactionAmountException();
         }
@@ -61,41 +50,27 @@ public class TransactionService {
             throw new ResourceNotFoundException();
         }
 
-        BigDecimal newBalance = account.getBalance().add(amount).setScale(2, RoundingMode.HALF_EVEN);
+        BigDecimal newBalance = account.getBalance()
+                                        .add(amount).setScale(2, RoundingMode.HALF_EVEN);
         account.setBalance(newBalance);
     }
 
-    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 250))
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public void doWithdrawTransaction(Transaction transaction)
-            throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
-            throw new InvalidTransactionRequestException();
-        }
-        performWriteOff(transaction, transaction.getFromAccountId());
-        transactionRepository.save(transaction);
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public void doWithdrawTransaction(OneTargetTransaction oneTargetTransaction)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
+        performWriteOff(oneTargetTransaction.getAmount(), oneTargetTransaction.getAccountId());
     }
 
-    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 250))
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public void doDepositTransaction(Transaction transaction)
-            throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        if (transaction.getToAccountId() != null || transaction.getFromAccountId() == null) {
-            throw new InvalidTransactionRequestException();
-        }
-        performReplenishment(transaction, transaction.getFromAccountId());
-        transactionRepository.save(transaction);
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public void doDepositTransaction(OneTargetTransaction oneTargetTransaction)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
+        performReplenishment(oneTargetTransaction.getAmount(), oneTargetTransaction.getAccountId());
     }
 
-    @Retryable(maxAttempts = 5, backoff = @Backoff(delay = 250))
-    @Transactional(isolation = Isolation.REPEATABLE_READ)
-    public void doTransferBetweenAccounts(Transaction transaction)
-            throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        if (transaction.getToAccountId() == null || transaction.getFromAccountId() == null) {
-            throw new InvalidTransactionRequestException();
-        }
-        performWriteOff(transaction, transaction.getFromAccountId());
-        performReplenishment(transaction, transaction.getToAccountId());
-        transactionRepository.save(transaction);
+    @Transactional(isolation = Isolation.SERIALIZABLE)
+    public void doTransferBetweenAccounts(TransferTransaction transferTransaction)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
+        performWriteOff(transferTransaction.getAmount(), transferTransaction.getFromAccountId());
+        performReplenishment(transferTransaction.getAmount(), transferTransaction.getToAccountId());
     }
 }

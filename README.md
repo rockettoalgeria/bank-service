@@ -10,9 +10,9 @@
 ```
 POST /auth - получение JWT, ожидает username и password (admin/password)
 *POST /account - создание счета с нулевым балансом и uuid
-*POST /transaction/withdraw - зачисление денег на счет
-*POST /transaction/deposit - снятие денег со счета
-*POST /transaction/transfer - перевод денег со счета на счет
+*POST /oneTargetTransaction/withdraw - зачисление денег на счет
+*POST /oneTargetTransaction/deposit - снятие денег со счета
+*POST /oneTargetTransaction/transfer - перевод денег со счета на счет
 ```
 Помеченные звездочкой запросы недоступны неавторизованным пользователям.
 

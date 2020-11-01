@@ -6,11 +6,3 @@ CREATE TABLE accounts (
                           balance decimal DEFAULT NULL,
                           PRIMARY KEY (id)
 );
-
-DROP TABLE IF EXISTS transactions;
-CREATE TABLE transactions (
-                               id SERIAL PRIMARY KEY,
-                               from_account_id uuid DEFAULT NULL,
-                               to_account_id uuid DEFAULT NULL,
-                               amount decimal DEFAULT NULL
-);

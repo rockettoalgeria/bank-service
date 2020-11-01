@@ -1,10 +1,9 @@
 package com.example.bankservice.controller;
 
 import com.example.bankservice.exception.InvalidTransactionAmountException;
-import com.example.bankservice.exception.InvalidTransactionRequestException;
 import com.example.bankservice.exception.ResourceNotFoundException;
-import com.example.bankservice.model.Transaction;
-import com.example.bankservice.repository.TransactionRepository;
+import com.example.bankservice.model.OneTargetTransaction;
+import com.example.bankservice.model.TransferTransaction;
 import com.example.bankservice.service.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -17,24 +16,21 @@ public class TransactionController {
     @Autowired
     TransactionService transactionService;
 
-    @Autowired
-    TransactionRepository transactionRepository;
-
     @PostMapping("/withdraw")
-    public void withdrawTransaction(@Validated @RequestBody Transaction transaction)
-            throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        transactionService.doWithdrawTransaction(transaction);
+    public void withdrawTransaction(@Validated @RequestBody OneTargetTransaction oneTargetTransaction)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
+        transactionService.doWithdrawTransaction(oneTargetTransaction);
     }
 
     @PostMapping("/deposit")
-    public void depositTransaction(@Validated @RequestBody Transaction transaction)
-            throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        transactionService.doDepositTransaction(transaction);
+    public void depositTransaction(@Validated @RequestBody OneTargetTransaction oneTargetTransaction)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
+        transactionService.doDepositTransaction(oneTargetTransaction);
     }
 
     @PostMapping("/transfer")
-    public void transferBetweenAccounts(@Validated @RequestBody Transaction transaction)
-            throws InvalidTransactionAmountException, InvalidTransactionRequestException, ResourceNotFoundException {
-        transactionService.doTransferBetweenAccounts(transaction);
+    public void transferBetweenAccounts(@Validated @RequestBody TransferTransaction transferTransaction)
+            throws InvalidTransactionAmountException, ResourceNotFoundException {
+        transactionService.doTransferBetweenAccounts(transferTransaction);
     }
 }
