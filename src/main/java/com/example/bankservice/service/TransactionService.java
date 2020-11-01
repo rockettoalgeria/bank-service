@@ -5,12 +5,11 @@ import com.example.bankservice.exception.ResourceNotFoundException;
 import com.example.bankservice.model.Account;
 import com.example.bankservice.model.OneTargetTransaction;
 import com.example.bankservice.model.TransferTransaction;
+import com.example.bankservice.repository.AccountRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
-import javax.persistence.LockModeType;
-import javax.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
@@ -18,16 +17,15 @@ import java.util.UUID;
 @Service
 public class TransactionService {
 
-    @PersistenceContext
-    private EntityManager em;
+    @Autowired
+    private AccountRepository accountRepository;
 
     private void performWriteOff(BigDecimal amount, UUID accountId)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
             throw new InvalidTransactionAmountException();
         }
-        Account account = em.find(Account.class, accountId,
-                LockModeType.PESSIMISTIC_WRITE);
+        Account account = accountRepository.findOneById(accountId);
         if (account == null) {
             throw new ResourceNotFoundException();
         }
@@ -46,8 +44,7 @@ public class TransactionService {
         if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
             throw new InvalidTransactionAmountException();
         }
-        Account account = em.find(Account.class, accountId,
-                LockModeType.PESSIMISTIC_WRITE);
+        Account account = accountRepository.findOneById(accountId);
         if (account == null) {
             throw new ResourceNotFoundException();
         }
