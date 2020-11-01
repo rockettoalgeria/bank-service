@@ -70,7 +70,7 @@ public class TransactionService {
     }
 
     @Transactional
-    public void doTransferBetweenAccounts(TransferTransaction transferTransaction)
+    synchronized public void doTransferBetweenAccounts(TransferTransaction transferTransaction)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         performWriteOff(transferTransaction.getAmount(), transferTransaction.getFromAccountId());
         performReplenishment(transferTransaction.getAmount(), transferTransaction.getToAccountId());

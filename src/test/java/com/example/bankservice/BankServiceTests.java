@@ -268,5 +268,8 @@ class BankServiceTests {
 
         threadTransfer.join();
         threadConcurrent.join();
+
+        Assert.assertEquals(BigDecimal.valueOf(978).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_2));
+        Assert.assertEquals(BigDecimal.valueOf(1172).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
     }
 }
