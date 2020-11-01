@@ -8,9 +8,11 @@ import com.example.bankservice.model.TransferTransaction;
 import com.example.bankservice.repository.AccountRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.LockModeType;
+import javax.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.UUID;
@@ -18,15 +20,16 @@ import java.util.UUID;
 @Service
 public class TransactionService {
 
-    @Autowired
-    private AccountRepository accountRepository;
+    @PersistenceContext
+    private EntityManager em;
 
     private void performWriteOff(BigDecimal amount, UUID accountId)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
             throw new InvalidTransactionAmountException();
         }
-        Account account = accountRepository.findOneById(accountId);
+        Account account = em.find(Account.class, accountId,
+                LockModeType.PESSIMISTIC_WRITE);
         if (account == null) {
             throw new ResourceNotFoundException();
         }
@@ -45,7 +48,8 @@ public class TransactionService {
         if (amount.compareTo(BigDecimal.ZERO) < 0 || amount.compareTo(BigDecimal.valueOf(0.01)) < 0) {
             throw new InvalidTransactionAmountException();
         }
-        Account account = accountRepository.findOneById(accountId);
+        Account account = em.find(Account.class, accountId,
+                LockModeType.PESSIMISTIC_WRITE);
         if (account == null) {
             throw new ResourceNotFoundException();
         }
@@ -55,19 +59,19 @@ public class TransactionService {
         account.setBalance(newBalance);
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional
     public void doWithdrawTransaction(OneTargetTransaction oneTargetTransaction)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         performWriteOff(oneTargetTransaction.getAmount(), oneTargetTransaction.getAccountId());
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional
     public void doDepositTransaction(OneTargetTransaction oneTargetTransaction)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         performReplenishment(oneTargetTransaction.getAmount(), oneTargetTransaction.getAccountId());
     }
 
-    @Transactional(isolation = Isolation.SERIALIZABLE)
+    @Transactional
     public void doTransferBetweenAccounts(TransferTransaction transferTransaction)
             throws InvalidTransactionAmountException, ResourceNotFoundException {
         performWriteOff(transferTransaction.getAmount(), transferTransaction.getFromAccountId());
