@@ -200,12 +200,17 @@ class BankServiceTests {
         UUID accountID_1 = createAccount(token);
         UUID accountID_2 = createAccount(token);
 
+        // init 2 accounts with 1000
         OneTargetTransaction oneTargetTransaction = new OneTargetTransaction();
+        oneTargetTransaction.setAccountId(accountID_2);
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(1000));
+        transactionService.doDepositTransaction(oneTargetTransaction);
         oneTargetTransaction.setAccountId(accountID_1);
         oneTargetTransaction.setAmount(BigDecimal.valueOf(1000));
         transactionService.doDepositTransaction(oneTargetTransaction);
-        oneTargetTransaction.setAmount(BigDecimal.valueOf(10));
 
+        // deposits to same account with 2 threads
+        oneTargetTransaction.setAmount(BigDecimal.valueOf(10));
         Thread thread_1 = new Thread(() -> {
             for (int i = 0; i < 10; i++)
                 try {
@@ -224,53 +229,47 @@ class BankServiceTests {
             }
         });
 
-        Thread thread_3 = new Thread(() -> {
-            try {
-                transactionService.doDepositTransaction(oneTargetTransaction);
-            } catch (InvalidTransactionAmountException |  ResourceNotFoundException e) {
-                e.printStackTrace();
-            }
-        });
-
         thread_1.start();
         thread_2.start();
-        Thread.sleep(20);
-        thread_3.start();
 
         thread_1.join();
         thread_2.join();
-        thread_3.join();
+        Assert.assertEquals(BigDecimal.valueOf(1150).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
 
-        Assert.assertEquals(BigDecimal.valueOf(1160).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
+        // deadlock case
+        TransferTransaction transferTransaction = new TransferTransaction();
+        transferTransaction.setFromAccountId(accountID_1);
+        transferTransaction.setToAccountId(accountID_2);
+        transferTransaction.setAmount(BigDecimal.valueOf(33));
 
-        TransferTransaction transfer_transaction = new TransferTransaction();
-        transfer_transaction.setFromAccountId(accountID_1);
-        transfer_transaction.setToAccountId(accountID_2);
-        transfer_transaction.setAmount(BigDecimal.valueOf(100));
+        TransferTransaction concurrentTransferTransaction = new TransferTransaction();
+        concurrentTransferTransaction.setFromAccountId(accountID_2);
+        concurrentTransferTransaction.setToAccountId(accountID_1);
+        concurrentTransferTransaction.setAmount(BigDecimal.valueOf(55));
 
-        Thread thread_transfer = new Thread(() -> {
+        Thread threadTransfer = new Thread(() -> {
             try {
-                transactionService.doTransferBetweenAccounts(transfer_transaction);
+                transactionService.doTransferBetweenAccounts(transferTransaction);
             } catch (InvalidTransactionAmountException | ResourceNotFoundException e) {
                 e.printStackTrace();
             }
         });
 
-        Thread thread_concurrent = new Thread(() -> {
+        Thread threadConcurrent = new Thread(() -> {
             try {
-                transactionService.doDepositTransaction(oneTargetTransaction);
+                transactionService.doTransferBetweenAccounts(concurrentTransferTransaction);
             } catch (InvalidTransactionAmountException | ResourceNotFoundException e) {
                 e.printStackTrace();
             }
         });
 
-        thread_transfer.start();
-        thread_concurrent.start();
+        threadTransfer.start();
+        threadConcurrent.start();
 
-        thread_concurrent.join();
-        thread_transfer.join();
+        threadTransfer.join();
+        threadConcurrent.join();
 
-        Assert.assertEquals(BigDecimal.valueOf(100).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_2));
-        Assert.assertEquals(BigDecimal.valueOf(1070).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
+        Assert.assertEquals(BigDecimal.valueOf(1033).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_2));
+        Assert.assertEquals(BigDecimal.valueOf(1117).setScale(2, RoundingMode.HALF_EVEN), getActualBalance(accountID_1));
     }
 }

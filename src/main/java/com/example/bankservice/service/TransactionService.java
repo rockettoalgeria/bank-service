@@ -5,8 +5,6 @@ import com.example.bankservice.exception.ResourceNotFoundException;
 import com.example.bankservice.model.Account;
 import com.example.bankservice.model.OneTargetTransaction;
 import com.example.bankservice.model.TransferTransaction;
-import com.example.bankservice.repository.AccountRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
